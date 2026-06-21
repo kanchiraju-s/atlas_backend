@@ -13,4 +13,6 @@ public interface TopicService {
     Topic getTopic(UUID topicId);
 
     Topic createTopic(Topic topic);
+
+    void deleteTopic(UUID topicId, UUID requesterId);
 }

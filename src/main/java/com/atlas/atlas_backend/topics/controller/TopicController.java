@@ -74,6 +74,20 @@ public class TopicController {
                 .build();
     }
 
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteTopic(
+            @PathVariable UUID id,
+            Authentication authentication
+    ) {
+        UUID requesterId = (UUID) authentication.getPrincipal();
+        topicService.deleteTopic(id, requesterId);
+        return ApiResponse.<Void>builder()
+                .success(true)
+                .message("Topic deleted successfully")
+                .data(null)
+                .build();
+    }
+
     private TopicResponse toResponse(
             Topic topic
     ) {

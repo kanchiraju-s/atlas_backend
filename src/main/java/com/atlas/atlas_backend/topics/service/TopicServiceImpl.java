@@ -33,4 +33,14 @@ public class TopicServiceImpl implements TopicService {
     public Topic createTopic(Topic topic) {
         return topicRepository.save(topic);
     }
+
+    @Override
+    public void deleteTopic(UUID topicId, UUID requesterId) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new RuntimeException("Topic not found"));
+        if (!topic.getCreatedBy().equals(requesterId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Not the topic creator");
+        }
+        topicRepository.delete(topic);
+    }
 }
