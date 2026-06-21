@@ -10,6 +10,7 @@ import com.atlas.atlas_backend.users.entity.User;
 import com.atlas.atlas_backend.users.repository.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Isolation;
@@ -20,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -34,6 +36,8 @@ public class AuthController {
 
     @PostMapping("/google")
     public ApiResponse<AuthResponse> googleSignIn(@RequestBody GoogleSignInRequest req) {
+        log.info("[Atlas Auth] POST /auth/google received (tokenLength={})",
+                req.getIdToken() != null ? req.getIdToken().length() : 0);
         GoogleIdToken.Payload payload = googleAuthService.verify(req.getIdToken());
 
         String googleId = payload.getSubject();
@@ -45,10 +49,13 @@ public class AuthController {
         User user = existing.map(u -> updateUser(u, name, email, picture))
                             .orElseGet(() -> createUser(googleId, email, name, picture));
 
+        AuthResponse resp = toAuthResponse(user);
+        log.info("[Atlas Auth] Sign-in complete — userId={}, explorerNumber={}, status={}",
+                user.getId(), user.getExplorerNumber(), user.getStatus());
         return ApiResponse.<AuthResponse>builder()
                 .success(true)
                 .message("Authenticated")
-                .data(toAuthResponse(user))
+                .data(resp)
                 .build();
     }
 
