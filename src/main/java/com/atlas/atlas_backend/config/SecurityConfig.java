@@ -41,6 +41,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/notifications/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
+                // Health
+                .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                 // Actuator
                 .requestMatchers("/actuator/**").permitAll()
                 // All writes require auth

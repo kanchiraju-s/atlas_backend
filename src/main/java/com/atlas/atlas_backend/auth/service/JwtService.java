@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.auth.service;
 
+import com.atlas.atlas_backend.users.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -26,19 +27,22 @@ public class JwtService {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAccessToken(UUID userId) {
+    public String generateAccessToken(User user) {
         return Jwts.builder()
-                .subject(userId.toString())
+                .subject(user.getId().toString())
                 .claim("type", "access")
+                .claim("email", user.getEmail())
+                .claim("explorerNumber", user.getExplorerNumber())
+                .claim("status", user.getStatus())
                 .issuedAt(new Date())
                 .expiration(Date.from(Instant.now().plus(ACCESS_TOKEN_MINUTES, ChronoUnit.MINUTES)))
                 .signWith(signingKey())
                 .compact();
     }
 
-    public String generateRefreshToken(UUID userId) {
+    public String generateRefreshToken(User user) {
         return Jwts.builder()
-                .subject(userId.toString())
+                .subject(user.getId().toString())
                 .claim("type", "refresh")
                 .issuedAt(new Date())
                 .expiration(Date.from(Instant.now().plus(REFRESH_TOKEN_DAYS, ChronoUnit.DAYS)))

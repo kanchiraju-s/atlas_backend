@@ -10,8 +10,12 @@ import com.atlas.atlas_backend.users.entity.User;
 import com.atlas.atlas_backend.users.repository.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -35,9 +39,11 @@ public class AuthController {
         String googleId = payload.getSubject();
         String email = payload.getEmail();
         String name = (String) payload.get("name");
+        String picture = (String) payload.get("picture");
 
         Optional<User> existing = userRepository.findByGoogleId(googleId);
-        User user = existing.orElseGet(() -> createUser(googleId, email, name));
+        User user = existing.map(u -> updateUser(u, name, email, picture))
+                            .orElseGet(() -> createUser(googleId, email, name, picture));
 
         return ApiResponse.<AuthResponse>builder()
                 .success(true)
@@ -49,11 +55,11 @@ public class AuthController {
     @PostMapping("/refresh")
     public ApiResponse<AuthResponse> refresh(@RequestBody RefreshRequest req) {
         if (!jwtService.isRefreshToken(req.getRefreshToken())) {
-            throw new IllegalArgumentException("Not a refresh token");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
         }
         UUID userId = jwtService.validateAndExtractUserId(req.getRefreshToken());
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
 
         return ApiResponse.<AuthResponse>builder()
                 .success(true)
@@ -63,12 +69,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(@RequestBody RefreshRequest req) {
-        // Stateless — client discards tokens. Future: add token blacklist.
+    public ApiResponse<Void> logout(@RequestBody(required = false) RefreshRequest req) {
         return ApiResponse.<Void>builder().success(true).message("Logged out").build();
     }
 
-    private User createUser(String googleId, String email, String displayName) {
+    // Synchronized + SERIALIZABLE transaction prevents race conditions at user #500
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    protected synchronized User createUser(String googleId, String email, String displayName, String picture) {
         long activeCount = userRepository.countByStatus("ACTIVE");
         String status = activeCount >= MAX_ALPHA_USERS ? "WAITLISTED" : "ACTIVE";
 
@@ -85,11 +92,29 @@ public class AuthController {
                 .email(email)
                 .displayName(displayName != null ? displayName : username)
                 .username(username)
+                .avatarUrl(picture)
                 .status(status)
                 .explorerNumber(explorerNumber)
                 .build();
 
         return userRepository.save(user);
+    }
+
+    private User updateUser(User user, String name, String email, String picture) {
+        boolean changed = false;
+        if (name != null && !name.equals(user.getDisplayName())) {
+            user.setDisplayName(name);
+            changed = true;
+        }
+        if (email != null && !email.equals(user.getEmail())) {
+            user.setEmail(email);
+            changed = true;
+        }
+        if (picture != null && !picture.equals(user.getAvatarUrl())) {
+            user.setAvatarUrl(picture);
+            changed = true;
+        }
+        return changed ? userRepository.save(user) : user;
     }
 
     private String generateUsername(String email) {
@@ -105,8 +130,8 @@ public class AuthController {
 
     private AuthResponse toAuthResponse(User user) {
         return AuthResponse.builder()
-                .accessToken(jwtService.generateAccessToken(user.getId()))
-                .refreshToken(jwtService.generateRefreshToken(user.getId()))
+                .accessToken(jwtService.generateAccessToken(user))
+                .refreshToken(jwtService.generateRefreshToken(user))
                 .userId(user.getId().toString())
                 .explorerNumber(user.getExplorerNumber() != null ? user.getExplorerNumber() : 0)
                 .status(user.getStatus())
