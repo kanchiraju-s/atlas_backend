@@ -14,4 +14,5 @@ public class TopicResponse {
     private UUID id;
     private String title;
     private Instant createdAt;
+    private UUID createdBy;
 }

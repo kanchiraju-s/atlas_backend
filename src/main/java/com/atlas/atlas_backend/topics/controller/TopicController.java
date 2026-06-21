@@ -95,6 +95,7 @@ public class TopicController {
                 .id(topic.getId())
                 .title(topic.getTitle())
                 .createdAt(topic.getCreatedAt())
+                .createdBy(topic.getCreatedBy())
                 .build();
     }
 }
