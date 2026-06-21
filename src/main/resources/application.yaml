@@ -20,4 +20,4 @@ atlas:
   jwt:
     secret: ${ATLAS_JWT_SECRET:atlas-local-dev-secret-must-be-at-least-32-chars-long}
   google:
-    client-id: ${ATLAS_GOOGLE_CLIENT_ID:}
+    client-id: ${ATLAS_GOOGLE_CLIENT_ID:476490077698-iv7t18ocilpldlegqtm5itsnmh5j2kt4.apps.googleusercontent.com}
