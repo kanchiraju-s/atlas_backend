@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: atlas-backend
+  datasource:
+    url: jdbc:postgresql://localhost:5432/atlas
+    username: postgres
+    password: postgres
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+
+atlas:
+  jwt:
+    secret: ${ATLAS_JWT_SECRET:atlas-local-dev-secret-must-be-at-least-32-chars-long}
+  google:
+    client-id: ${ATLAS_GOOGLE_CLIENT_ID:}
