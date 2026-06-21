@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,12 +21,15 @@ public class DiscussionServiceImpl implements DiscussionService {
     public List<DiscussionResponse> getDiscussions(UUID dropId) {
         List<Discussion> all = discussionRepository.findByDropIdOrderByCreatedAtAsc(dropId);
 
+        // Batch-load all authors to avoid N+1
+        List<UUID> authorIds = all.stream().map(Discussion::getAuthorId).distinct().toList();
+        Map<UUID, String> nameById = userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(u -> u.getId(), u -> u.getDisplayName()));
+
         Map<UUID, DiscussionResponse> byId = new LinkedHashMap<>();
 
         for (Discussion d : all) {
-            String authorName = userRepository.findById(d.getAuthorId())
-                    .map(u -> u.getDisplayName())
-                    .orElse(null);
+            String authorName = nameById.get(d.getAuthorId());
 
             DiscussionResponse dto = DiscussionResponse.builder()
                     .id(d.getId())

@@ -33,13 +33,15 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public auth endpoints
                 .requestMatchers("/api/auth/**").permitAll()
-                // Public read endpoints
+                // /me and notifications are user-specific — must come before the wildcards below
+                .requestMatchers(HttpMethod.GET, "/api/users/me", "/api/users/me/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/notifications", "/api/notifications/**").authenticated()
+                // Public read endpoints (specific patterns evaluated after the authenticated rules above)
                 .requestMatchers(HttpMethod.GET, "/api/feed").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/topics/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/drops/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/discussions/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/notifications/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
                 // Health
                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()

@@ -11,6 +11,7 @@ import com.atlas.atlas_backend.users.dto.UserStatsResponse;
 import com.atlas.atlas_backend.users.entity.User;
 import com.atlas.atlas_backend.users.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,16 +23,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
 
-    private static final UUID ME = UUID.fromString("11111111-1111-1111-1111-111111111111");
-
     private final UserService userService;
     private final DropRepository dropRepository;
     private final DiscussionRepository discussionRepository;
     private final TopicRepository topicRepository;
 
     @GetMapping("/me")
-    public ApiResponse<UserResponse> getMe() {
-        return getUser(ME);
+    public ApiResponse<UserResponse> getMe(Authentication authentication) {
+        return getUser((UUID) authentication.getPrincipal());
     }
 
     @GetMapping("/{id}")
@@ -45,8 +44,8 @@ public class UserController {
     }
 
     @GetMapping("/me/stats")
-    public ApiResponse<UserStatsResponse> getMeStats() {
-        return getUserStats(ME);
+    public ApiResponse<UserStatsResponse> getMeStats(Authentication authentication) {
+        return getUserStats((UUID) authentication.getPrincipal());
     }
 
     @GetMapping("/{id}/stats")
@@ -81,8 +80,8 @@ public class UserController {
     }
 
     @GetMapping("/me/drops")
-    public ApiResponse<List<DropResponse>> getMeDrops() {
-        return getUserDrops(ME);
+    public ApiResponse<List<DropResponse>> getMeDrops(Authentication authentication) {
+        return getUserDrops((UUID) authentication.getPrincipal());
     }
 
     @GetMapping("/{id}/drops")
@@ -108,8 +107,8 @@ public class UserController {
     }
 
     @GetMapping("/me/topics")
-    public ApiResponse<List<TopicResponse>> getMeTopics() {
-        return getUserTopics(ME);
+    public ApiResponse<List<TopicResponse>> getMeTopics(Authentication authentication) {
+        return getUserTopics((UUID) authentication.getPrincipal());
     }
 
     @GetMapping("/{id}/topics")

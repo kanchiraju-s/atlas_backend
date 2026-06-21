@@ -34,6 +34,42 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    // "not found" RuntimeExceptions from services → 404
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRuntime(RuntimeException ex) {
+        String msg = ex.getMessage();
+        if (msg != null && msg.toLowerCase().contains("not found")) {
+            log.warn("[Atlas Error] 404 {}", msg);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.<Void>builder()
+                            .success(false)
+                            .message(msg)
+                            .build());
+        }
+        log.error("[Atlas Error] Unhandled RuntimeException: {}", msg, ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.<Void>builder()
+                        .success(false)
+                        .message("Internal server error")
+                        .build());
+    }
+
+    // Validation failures (@Valid @NotBlank @Size) → 400
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleValidation(
+            org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        String msg = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .findFirst()
+                .orElse("Validation failed");
+        log.warn("[Atlas Error] 400 {}", msg);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.<Void>builder()
+                        .success(false)
+                        .message(msg)
+                        .build());
+    }
+
     // Catch-all: always return JSON, never Spring's HTML error page
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {

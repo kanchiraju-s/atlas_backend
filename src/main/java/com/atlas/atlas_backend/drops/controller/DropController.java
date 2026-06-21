@@ -77,6 +77,16 @@ public class DropController {
                 .build();
     }
 
+    @GetMapping("/drops/{id}")
+    public ApiResponse<DropResponse> getDrop(@PathVariable UUID id) {
+        Drop drop = dropService.getDrop(id);
+        return ApiResponse.<DropResponse>builder()
+                .success(true)
+                .message("Drop fetched successfully")
+                .data(toEnrichedResponse(drop))
+                .build();
+    }
+
     @GetMapping("/drops/search")
     public ApiResponse<List<DropResponse>> searchDrops(@RequestParam String q) {
         List<DropResponse> results = dropRepository

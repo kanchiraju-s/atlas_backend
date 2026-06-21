@@ -5,6 +5,7 @@ import com.atlas.atlas_backend.notifications.dto.NotificationResponse;
 import com.atlas.atlas_backend.notifications.entity.Notification;
 import com.atlas.atlas_backend.notifications.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,32 +18,21 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NotificationController {
 
-    private final NotificationService
-            notificationService;
+    private final NotificationService notificationService;
 
     @GetMapping
-    public ApiResponse<List<NotificationResponse>>
-    getNotifications() {
+    public ApiResponse<List<NotificationResponse>> getNotifications(Authentication authentication) {
+        UUID userId = (UUID) authentication.getPrincipal();
 
-        UUID userId =
-                UUID.fromString(
-                        "11111111-1111-1111-1111-111111111111"
-                );
+        List<NotificationResponse> response = notificationService
+                .getNotifications(userId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
 
-        List<NotificationResponse> response =
-                notificationService
-                        .getNotifications(userId)
-                        .stream()
-                        .map(this::toResponse)
-                        .toList();
-
-        return ApiResponse
-                .<List<NotificationResponse>>
-                        builder()
+        return ApiResponse.<List<NotificationResponse>>builder()
                 .success(true)
-                .message(
-                        "Notifications fetched successfully"
-                )
+                .message("Notifications fetched successfully")
                 .data(response)
                 .build();
     }

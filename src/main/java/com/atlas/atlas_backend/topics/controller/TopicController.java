@@ -8,9 +8,9 @@ import com.atlas.atlas_backend.topics.entity.Topic;
 import com.atlas.atlas_backend.topics.service.TopicService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,11 +55,14 @@ public class TopicController {
 
     @PostMapping
     public ApiResponse<TopicResponse> createTopic(
-            @Valid @RequestBody CreateTopicRequest request
+            @Valid @RequestBody CreateTopicRequest request,
+            Authentication authentication
     ) {
+        UUID createdBy = (UUID) authentication.getPrincipal();
 
         Topic topic = Topic.builder()
                 .title(request.getTitle())
+                .createdBy(createdBy)
                 .build();
 
         topic = topicService.createTopic(topic);
