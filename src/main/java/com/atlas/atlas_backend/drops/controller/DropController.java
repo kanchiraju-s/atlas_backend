@@ -58,12 +58,14 @@ public class DropController {
     @PostMapping("/topics/{topicId}/drops")
     public ApiResponse<DropResponse> createDrop(
             @PathVariable UUID topicId,
-            @Valid @RequestBody CreateDropRequest request
+            @Valid @RequestBody CreateDropRequest request,
+            org.springframework.security.core.Authentication authentication
     ) {
+        UUID authorId = (UUID) authentication.getPrincipal();
         Drop drop = Drop.builder()
                 .topicId(topicId)
                 .content(request.getContent())
-                .authorId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+                .authorId(authorId)
                 .build();
 
         drop = dropService.createDrop(drop);

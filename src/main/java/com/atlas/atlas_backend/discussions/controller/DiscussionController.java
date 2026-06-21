@@ -36,11 +36,13 @@ public class DiscussionController {
     @PostMapping("/drops/{dropId}/discussions")
     public ApiResponse<DiscussionResponse> createDiscussion(
             @PathVariable UUID dropId,
-            @Valid @RequestBody CreateDiscussionRequest request
+            @Valid @RequestBody CreateDiscussionRequest request,
+            org.springframework.security.core.Authentication authentication
     ) {
+        UUID authorId = (UUID) authentication.getPrincipal();
         Discussion discussion = Discussion.builder()
                 .dropId(dropId)
-                .authorId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+                .authorId(authorId)
                 .content(request.getContent())
                 .parentDiscussionId(request.getParentDiscussionId())
                 .build();
