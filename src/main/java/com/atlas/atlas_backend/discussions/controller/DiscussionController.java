@@ -6,11 +6,13 @@ import com.atlas.atlas_backend.discussions.dto.DiscussionResponse;
 import com.atlas.atlas_backend.discussions.entity.Discussion;
 import com.atlas.atlas_backend.discussions.repository.DiscussionRepository;
 import com.atlas.atlas_backend.discussions.service.DiscussionService;
+import com.atlas.atlas_backend.users.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -20,6 +22,7 @@ public class DiscussionController {
 
     private final DiscussionService discussionService;
     private final DiscussionRepository discussionRepository;
+    private final UserRepository userRepository;
 
     @GetMapping("/drops/{dropId}/discussions")
     public ApiResponse<List<DiscussionResponse>> getDiscussions(@PathVariable UUID dropId) {
@@ -44,10 +47,15 @@ public class DiscussionController {
 
         Discussion saved = discussionService.createDiscussion(discussion);
 
+        String authorName = userRepository.findById(saved.getAuthorId())
+                .map(u -> u.getDisplayName())
+                .orElse(null);
+
         DiscussionResponse response = DiscussionResponse.builder()
                 .id(saved.getId())
                 .dropId(saved.getDropId())
                 .authorId(saved.getAuthorId())
+                .authorName(authorName)
                 .content(saved.getContent())
                 .createdAt(saved.getCreatedAt())
                 .parentDiscussionId(saved.getParentDiscussionId())
@@ -62,13 +70,21 @@ public class DiscussionController {
 
     @GetMapping("/discussions/search")
     public ApiResponse<List<DiscussionResponse>> searchDiscussions(@RequestParam String q) {
-        List<DiscussionResponse> results = discussionRepository
-                .findTop20ByContentContainingIgnoreCase(q)
+        List<Discussion> found = discussionRepository.findTop20ByContentContainingIgnoreCase(q);
+
+        // Batch-load authors to avoid N+1
+        List<UUID> authorIds = found.stream().map(Discussion::getAuthorId).distinct().toList();
+        Map<UUID, String> nameById = userRepository.findAllById(authorIds)
                 .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        u -> u.getId(), u -> u.getDisplayName()));
+
+        List<DiscussionResponse> results = found.stream()
                 .map(d -> DiscussionResponse.builder()
                         .id(d.getId())
                         .dropId(d.getDropId())
                         .authorId(d.getAuthorId())
+                        .authorName(nameById.get(d.getAuthorId()))
                         .content(d.getContent())
                         .createdAt(d.getCreatedAt())
                         .parentDiscussionId(d.getParentDiscussionId())

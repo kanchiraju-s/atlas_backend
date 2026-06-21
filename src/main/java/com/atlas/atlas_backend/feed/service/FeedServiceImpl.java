@@ -9,6 +9,8 @@ import com.atlas.atlas_backend.feed.dto.FeedResponse;
 import com.atlas.atlas_backend.topics.dto.TopicResponse;
 import com.atlas.atlas_backend.topics.entity.Topic;
 import com.atlas.atlas_backend.topics.repository.TopicRepository;
+import com.atlas.atlas_backend.users.entity.User;
+import com.atlas.atlas_backend.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +28,7 @@ public class FeedServiceImpl implements FeedService {
     private final TopicRepository topicRepository;
     private final DropRepository dropRepository;
     private final DiscussionRepository discussionRepository;
+    private final UserRepository userRepository;
 
     @Override
     public FeedResponse getFeed() {
@@ -47,6 +50,15 @@ public class FeedServiceImpl implements FeedService {
                     .forEach(t -> topicById.put(t.getId(), t));
         }
 
+        // Batch-load all authors to avoid N+1 queries
+        List<UUID> authorIds = recentDrops.stream()
+                .map(Drop::getAuthorId)
+                .distinct()
+                .toList();
+        Map<UUID, String> authorNameById = userRepository.findAllById(authorIds)
+                .stream()
+                .collect(Collectors.toMap(User::getId, User::getDisplayName));
+
         List<DropPreview> recentDropPreviews = recentDrops.stream()
                 .map(drop -> {
                     Topic topic = topicById.get(drop.getTopicId());
@@ -55,7 +67,10 @@ public class FeedServiceImpl implements FeedService {
                             .dropId(drop.getId())
                             .topicId(drop.getTopicId())
                             .topicTitle(topic != null ? topic.getTitle() : "")
+                            .authorId(drop.getAuthorId())
+                            .authorName(authorNameById.get(drop.getAuthorId()))
                             .content(drop.getContent())
+                            .createdAt(drop.getCreatedAt())
                             .discussionCount(discussionCount)
                             .build();
                 })
