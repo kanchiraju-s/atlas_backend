@@ -1,6 +1,5 @@
 package com.atlas.atlas_backend.topics.controller;
 
-
 import com.atlas.atlas_backend.common.dto.ApiResponse;
 import com.atlas.atlas_backend.topics.dto.CreateTopicRequest;
 import com.atlas.atlas_backend.topics.dto.TopicResponse;
@@ -25,12 +24,10 @@ public class TopicController {
     public ApiResponse<List<TopicResponse>> searchTopics(
             @RequestParam String q
     ) {
-
-        List<TopicResponse> response =
-                topicService.searchTopics(q)
-                        .stream()
-                        .map(this::toResponse)
-                        .toList();
+        List<TopicResponse> response = topicService.searchTopics(q)
+                .stream()
+                .map(this::toResponse)
+                .toList();
 
         return ApiResponse.<List<TopicResponse>>builder()
                 .success(true)
@@ -39,11 +36,23 @@ public class TopicController {
                 .build();
     }
 
+    @GetMapping("/slug/{slug}")
+    public ApiResponse<TopicResponse> getTopicBySlug(
+            @PathVariable String slug
+    ) {
+        Topic topic = topicService.getTopicBySlug(slug);
+
+        return ApiResponse.<TopicResponse>builder()
+                .success(true)
+                .message("Topic fetched successfully")
+                .data(toResponse(topic))
+                .build();
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<TopicResponse> getTopic(
             @PathVariable UUID id
     ) {
-
         Topic topic = topicService.getTopic(id);
 
         return ApiResponse.<TopicResponse>builder()
@@ -88,12 +97,11 @@ public class TopicController {
                 .build();
     }
 
-    private TopicResponse toResponse(
-            Topic topic
-    ) {
+    private TopicResponse toResponse(Topic topic) {
         return TopicResponse.builder()
                 .id(topic.getId())
                 .title(topic.getTitle())
+                .slug(topic.getSlug())
                 .createdAt(topic.getCreatedAt())
                 .createdBy(topic.getCreatedBy())
                 .build();

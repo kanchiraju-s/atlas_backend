@@ -1,6 +1,5 @@
 package com.atlas.atlas_backend.topics.service;
 
-
 import com.atlas.atlas_backend.topics.entity.Topic;
 
 import java.util.List;
@@ -11,6 +10,8 @@ public interface TopicService {
     List<Topic> searchTopics(String query);
 
     Topic getTopic(UUID topicId);
+
+    Topic getTopicBySlug(String slug);
 
     Topic createTopic(Topic topic);
 
